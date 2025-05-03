@@ -1,19 +1,18 @@
-# 📚 Habit Tracker – Study Like a Pro
+# 📚 Habit Tracker – manage Like a Pro
 
-> "We work in silence. Our success will be the noise."
-
-Welcome to **Habit Tracker**, your all-in-one personal dashboard to track study habits, visualize progress, and stay consistent with your goals. This project is under private development — a silent build-up to something powerful. 💥
+Welcome to **Habit Tracker**, your all-in-one personal dashboard to track  habits, visualize progress, and stay consistent with your goals. This project is under development — a build-up to something powerful. 💥
 
 ---
 
 ## 🚀 Features
 
-* ✅ Log daily study sessions with time, duration, subject, and location
+* 🧠 AI insights
+* ✅ Log daily  sessions
 * 📊 Weekly analytics: total hours, daily average, best/worst day, and streaks
 * 📅 Clean calendar view (coming soon)
 * 📈 Beautiful bar chart visualization via Chart.js
 * 🌙 Dark mode support (experimental)
-* 🔒 Local SQLite DB (lightweight and portable)
+* 🔒 Local SQLite DB (lightweight and portable)  
 
 ---
 
@@ -25,22 +24,6 @@ Welcome to **Habit Tracker**, your all-in-one personal dashboard to track study 
 | Frontend | HTML, CSS     |
 | Charts   | Chart.js      |
 | Database | SQLite        |
-
----
-
-## 🧠 Project Structure
-
-```
-habit-tracker/
-├── app.py                 # Flask server
-├── studying.db            # SQLite database
-├── templates/             # HTML templates
-│   ├── main.html          # Home input form
-│   └── studying.html      # Stats and charts
-├── static/
-│   └── style.css          # Styling
-└── README.md              # You are here
-```
 
 ---
 
@@ -99,4 +82,4 @@ Then go to `http://127.0.0.1:5000` in your browser.
 
 ## 📢 License
 
-This project is private for now. License will be revealed upon public release.
+This project is still under developpement. License will be revealed upon public release.
