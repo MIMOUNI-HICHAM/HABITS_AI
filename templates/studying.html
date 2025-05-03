@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mes statistiques d'étude</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📈 Suivi d'étude (7 derniers jours)</h1>
+            <p>Dernier jour analysé : <strong>{{ labels[-1] }}</strong></p>
+        </header>
+
+        <section class="chart-container">
+            <canvas id="weekChart"></canvas>
+        </section>
+
+        <section class="stats">
+            <h2>🔍 Statistiques</h2>
+            <ul>
+                <li><strong>Total :</strong> {{ stats.total }}h</li>
+                <li><strong>Moyenne :</strong> {{ stats.avg }}h/jour</li>
+                <li><strong>📅 Meilleur jour :</strong> {{ stats.best_day }}</li>
+                <li><strong>😴 Pire jour :</strong> {{ stats.worst_day }}</li>
+                <li><strong>🔥 Streak actuel :</strong> {{ stats.streak }} jour(s)</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="{{ url_for('main') }}">⬅ Retour à l'accueil</a></p>
+        </footer>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('weekChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ labels | tojson }},
+                datasets: [{
+                    label: 'Heures d\'étude',
+                    data: {{ durations | tojson }},
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5,
+                    hoverBackgroundColor: 'rgba(75, 192, 192, 0.8)'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.raw} h`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Heures' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Jour' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
