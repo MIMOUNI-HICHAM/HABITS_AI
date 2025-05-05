@@ -1,155 +1,244 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify, send_from_directory
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from collections import defaultdict
+import os
 
 app = Flask(__name__)
 DATABASE = 'studying.db'
+WEEKLY_GOAL = 10  # hours per week
+
+def get_current_week_range():
+    today = datetime.combine(date.today(), datetime.min.time())
+    start_of_week = today - timedelta(days=today.weekday())
+    end_of_week = start_of_week + timedelta(days=6)
+    return start_of_week.strftime('%Y-%m-%d'), end_of_week.strftime('%Y-%m-%d')
+
+def get_last_week_range():
+    today = datetime.combine(date.today(), datetime.min.time())
+    start_of_week = today - timedelta(days=today.weekday())
+    last_week_start = start_of_week - timedelta(days=7)
+    last_week_end = start_of_week - timedelta(days=1)
+    return last_week_start.strftime('%Y-%m-%d'), last_week_end.strftime('%Y-%m-%d')
 
 # ========== Database Initialization ==========
 def init_db():
     with sqlite3.connect(DATABASE) as conn:
         c = conn.cursor()
         c.execute('''
-            CREATE TABLE IF NOT EXISTS studying (
+            CREATE TABLE IF NOT EXISTS study_sessions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT NOT NULL,
-                start TEXT NOT NULL,
-                duree REAL NOT NULL,
-                subject TEXT NOT NULL,
-                lieu TEXT NOT NULL
+                date TEXT,
+                time TEXT,
+                hours REAL,
+                topic TEXT,
+                location TEXT
             )
         ''')
         conn.commit()
 
-# ========== Get Study Data ==========
+def calculate_moving_average(data, window=7):
+    """Calculate moving average for a list of (date, value) tuples."""
+    if not data:
+        return []
+    
+    # Convert to list of tuples for easier processing
+    data_list = [(d['date'], d['hours']) for d in data]
+    result = []
+    
+    for i in range(len(data_list)):
+        start_idx = max(0, i - window + 1)
+        window_data = data_list[start_idx:i + 1]
+        avg = sum(hours for _, hours in window_data) / len(window_data)
+        result.append({'date': data_list[i][0], 'hours': round(avg, 2)})
+    
+    return result
+
+def calculate_streaks(dates_with_hours):
+    """Calculate current and longest streaks."""
+    if not dates_with_hours:
+        return {'current': 0, 'longest': 0}
+    
+    # Convert dates to datetime objects and sort
+    dates = sorted([datetime.strptime(d['date'], '%Y-%m-%d') for d in dates_with_hours])
+    today = datetime.today().date()
+    
+    # Calculate streaks
+    current_streak = 0
+    longest_streak = 0
+    temp_streak = 0
+    
+    for i in range(len(dates)):
+        if i == 0:
+            temp_streak = 1
+        else:
+            diff = (dates[i] - dates[i-1]).days
+            if diff == 1:
+                temp_streak += 1
+            else:
+                temp_streak = 1
+        
+        longest_streak = max(longest_streak, temp_streak)
+        
+        # Check if this is part of current streak
+        if dates[i].date() == today:
+            current_streak = temp_streak
+        elif dates[i].date() == today - timedelta(days=1):
+            current_streak = temp_streak
+    
+    return {
+        'current': current_streak,
+        'longest': longest_streak
+    }
+
+# ========== API Routes ==========
+@app.route('/api/study-data')
 def get_study_data():
     with sqlite3.connect(DATABASE) as conn:
         c = conn.cursor()
-        today = datetime.now().date()
-        start_date = today - timedelta(days=6)
+        
+        # Get current and last week ranges
+        current_week_start, current_week_end = get_current_week_range()
+        last_week_start, last_week_end = get_last_week_range()
+        
+        print(f"Debug - Week ranges:")
+        print(f"Current week: {current_week_start} to {current_week_end}")
+        print(f"Last week: {last_week_start} to {last_week_end}")
+        
+        # Daily Data
         c.execute('''
-            SELECT date, SUM(duree)
-            FROM studying
-            WHERE date BETWEEN ? AND ?
+            SELECT date, SUM(hours) as total_hours
+            FROM study_sessions
             GROUP BY date
-        ''', (start_date.isoformat(), today.isoformat()))
-        rows = c.fetchall()
+            ORDER BY date
+        ''')
+        daily_data = [{'date': row[0], 'hours': row[1]} for row in c.fetchall()]
+        print(f"Debug - Daily data count: {len(daily_data)}")
+        
+        # Calculate moving average
+        moving_avg_data = calculate_moving_average(daily_data)
+        print(f"Debug - Moving average data count: {len(moving_avg_data)}")
+        
+        # Current Week Total
+        c.execute('''
+            SELECT SUM(hours) as total_hours
+            FROM study_sessions
+            WHERE date BETWEEN ? AND ?
+        ''', (current_week_start, current_week_end))
+        current_week_hours = c.fetchone()[0] or 0
+        print(f"Debug - Current week hours: {current_week_hours}")
+        
+        # Last Week Total
+        c.execute('''
+            SELECT SUM(hours) as total_hours
+            FROM study_sessions
+            WHERE date BETWEEN ? AND ?
+        ''', (last_week_start, last_week_end))
+        last_week_hours = c.fetchone()[0] or 0
+        print(f"Debug - Last week hours: {last_week_hours}")
+        
+        # Calculate weekly change
+        weekly_change = ((current_week_hours - last_week_hours) / last_week_hours * 100) if last_week_hours > 0 else 0
+        
+        # Topic Balance - Last 30 days
+        thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        c.execute('''
+            SELECT topic, SUM(hours) as total_hours
+            FROM study_sessions
+            WHERE date >= ?
+            GROUP BY topic
+            ORDER BY total_hours DESC
+        ''', (thirty_days_ago,))
+        topic_data = [{'topic': row[0], 'hours': row[1]} for row in c.fetchall()]
+        print(f"Debug - Topic data count: {len(topic_data)}")
+        
+        # Calculate total hours for percentage
+        total_hours = sum(t['hours'] for t in topic_data)
+        topic_balance = [{
+            'topic': t['topic'],
+            'hours': t['hours'],
+            'percentage': round((t['hours'] / total_hours * 100), 1) if total_hours else 0
+        } for t in topic_data]
+        
+        # Most Productive Hours
+        c.execute('''
+            SELECT substr(time, 1, 2) as hour,
+                   SUM(hours) as total_hours
+            FROM study_sessions
+            GROUP BY hour
+            ORDER BY hour
+        ''')
+        hourly_data = [{'hour': int(row[0]), 'hours': row[1]} for row in c.fetchall()]
+        print(f"Debug - Hourly data count: {len(hourly_data)}")
+        
+        # Calendar Heatmap Data - Last 90 days
+        ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
+        c.execute('''
+            SELECT date, SUM(hours) as total_hours
+            FROM study_sessions
+            WHERE date >= ?
+            GROUP BY date
+            ORDER BY date
+        ''', (ninety_days_ago,))
+        heatmap_data = [{'date': row[0], 'hours': row[1]} for row in c.fetchall()]
+        print(f"Debug - Heatmap data count: {len(heatmap_data)}")
+        
+        response_data = {
+            'dailyData': daily_data,
+            'movingAvgData': moving_avg_data,
+            'weeklyComparison': {
+                'current': round(current_week_hours, 1),
+                'last': round(last_week_hours, 1),
+                'change': round(weekly_change, 1)
+            },
+            'topicBalance': topic_balance,
+            'hourlyData': hourly_data,
+            'heatmapData': heatmap_data,
+            'goalProgress': {
+                'current': round(current_week_hours, 1),
+                'goal': WEEKLY_GOAL,
+                'percentage': min(round((current_week_hours / WEEKLY_GOAL * 100), 1), 100)
+            }
+        }
+        
+        print("Debug - Response data structure:", list(response_data.keys()))
+        return jsonify(response_data)
 
-    daily_hours = defaultdict(float)
-    for row in rows:
-        daily_hours[row[0]] = row[1]
-
-    data = []
-    for i in range(7):
-        day = (start_date + timedelta(days=i)).isoformat()
-        data.append((day, daily_hours[day]))
-    return data
-
-# ========== Statistics ==========
-def get_stats(data):
-    durations = [d[1] for d in data]
-    total = round(sum(durations), 1)
-    avg = round(total / 7, 2)
-    max_day = max(data, key=lambda x: x[1])
-    min_day = min(data, key=lambda x: x[1])
-    streak = 0
-    for d in reversed(durations):
-        if d > 0:
-            streak += 1
-        else:
-            break
-    return {
-        'total': total,
-        'avg': avg,
-        'best_day': max_day[0],
-        'worst_day': min_day[0],
-        'streak': streak
-    }
-
-# ========== Main Page ==========
-@app.route('/', methods=['GET', 'POST'])
-def main():
-    today = datetime.now().date().isoformat()
-    if request.method == 'POST':
-        duree = float(request.form['duree'])
-        start = request.form['start']
-        subject = request.form['subject']
-        lieu = request.form['lieu']
-        date = today
-
-        with sqlite3.connect(DATABASE) as conn:
-            c = conn.cursor()
-            c.execute('''
-                INSERT INTO studying (date, start, duree, subject, lieu)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (date, start, duree, subject, lieu))
-            conn.commit()
-        return redirect(url_for('main'))
-
-    return render_template('main.html', today=today)
-
-# ========== Studying Analytics Page ==========
-@app.route('/studying')
-def studying():
-    # Get study data
-    study_data = get_study_data()
-    
-    # Prepare chart data
-    labels = [datetime.fromisoformat(d[0]).strftime('%d-%b') for d in study_data]
-    durations = [d[1] for d in study_data]
-    
-    # Calculate percentages
-    GOAL_PER_DAY = 1.0
-    chart_data = [min(int(h/GOAL_PER_DAY*100), 100) for h in durations]
-    
-    # Performance metrics
-    last_week_percent = int(sum(chart_data) / len(chart_data))
-    this_week_percent = last_week_percent
-    today_percent = chart_data[-1]
-    
-    # All-time average
+@app.route('/api/study-sessions', methods=['POST'])
+def add_study_session():
+    data = request.json
     with sqlite3.connect(DATABASE) as conn:
-        all_rows = conn.execute('SELECT date, SUM(duree) FROM studying GROUP BY date').fetchall()
-    days = [r[1] for r in all_rows]
-    studied_days = sum(1 for h in days if h > 0)
-    all_time_average = int(studied_days / len(days) * 100) if days else 0
-    
-    # Calendar data
-    today = datetime.now().date()
-    first_of_mo = today.replace(day=1)
-    _, days_in_month = divmod((first_of_mo.replace(month=first_of_mo.month%12+1, day=1) - first_of_mo).days, 1)
-    studied_set = {row[0] for row in all_rows if row[1] > 0}
-    
-    calendar_days = []
-    for day in range(1, days_in_month+1):
-        date_str = first_of_mo.replace(day=day).isoformat()
-        calendar_days.append({
-            'day': day,
-            'studied': date_str in studied_set
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO study_sessions (date, time, hours, topic, location)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (data['date'], data['time'], data['hours'], data['topic'], data['location']))
+        conn.commit()
+    return jsonify({'message': 'Study session added successfully'})
+
+@app.route('/api/debug-today')
+def debug_today():
+    today = datetime.now().strftime('%Y-%m-%d')
+    with sqlite3.connect(DATABASE) as conn:
+        c = conn.cursor()
+        c.execute('SELECT * FROM study_sessions WHERE date = ?', (today,))
+        rows = c.fetchall()
+        return jsonify({
+            'today': today,
+            'sessions': [{
+                'id': row[0],
+                'date': row[1],
+                'time': row[2],
+                'hours': row[3],
+                'topic': row[4],
+                'location': row[5]
+            } for row in rows]
         })
-    
-    # History data with formatted dates
-    history = []
-    for d in study_data:
-        date_obj = datetime.fromisoformat(d[0])
-        history.append({
-            'date': date_obj.strftime('%Y-%m-%d'),
-            'day_name': date_obj.strftime('%A'),
-            'completed': (d[1] > 0)
-        })
-    
-    return render_template('studying.html',
-        chart_labels=labels,
-        chart_data=chart_data,
-        last_week_percent=last_week_percent,
-        this_week_percent=this_week_percent,
-        today_percent=today_percent,
-        all_time_average=all_time_average,
-        calendar_days=calendar_days,
-        history=history,
-        current_date=datetime.now().strftime('%B %d, %Y')
-    )
+
+# ========== Main Routes ==========
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 if __name__ == '__main__':
     init_db()

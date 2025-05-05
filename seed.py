@@ -4,41 +4,59 @@ import random
 
 DATABASE = 'studying.db'
 
-def seed_data():
-    subjects = ['Math', 'Coding', 'Physics', 'Langues']
-    lieux = ['Maison', 'Bibliothèque', 'Café']
-    today = datetime.now().date()
-
+def init_db():
     with sqlite3.connect(DATABASE) as conn:
         c = conn.cursor()
-
-        # Créer la table si elle n'existe pas
         c.execute('''
-            CREATE TABLE IF NOT EXISTS studying (
+            CREATE TABLE IF NOT EXISTS study_sessions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT NOT NULL,
-                start TEXT NOT NULL,
-                duree REAL NOT NULL,
-                subject TEXT NOT NULL,
-                lieu TEXT NOT NULL
+                date TEXT,
+                time TEXT,
+                hours REAL,
+                topic TEXT,
+                location TEXT
             )
         ''')
+        conn.commit()
 
-        for i in range(10):  # 10 jours précédents
-            day = today - timedelta(days=i)
-            for _ in range(random.randint(0, 2)):  # 0 à 2 sessions par jour
-                duree = round(random.uniform(0.5, 3.0), 1)
-                start_hour = random.randint(7, 20)
-                start = f"{start_hour:02d}:{random.randint(0,59):02d}"
-                subject = random.choice(subjects)
-                lieu = random.choice(lieux)
+# Location preference rules
+def pick_location(hour):
+    if hour < 18:
+        return random.choices(['coffee', 'library'], weights=[0.7, 0.3])[0]
+    elif hour < 22:
+        return random.choices(['coffee', 'library', 'house'], weights=[0.4, 0.4, 0.2])[0]
+    else:
+        return 'house'
+
+def random_study_session(date):
+    hour = random.choices(range(17, 24), weights=[5, 10, 20, 25, 20, 10, 10])[0]
+    minute = random.choice([0, 15, 30, 45])
+    time = f"{hour:02}:{minute:02}"
+    topic = random.choices(['coding', 'math', 'coding', 'math', 'coding', 'other'], weights=[3, 3, 3, 3, 3, 1])[0]
+    hours = round(random.uniform(0.5, 3), 1)
+    location = pick_location(hour)
+    return (date.strftime('%Y-%m-%d'), time, hours, topic, location)
+
+def seed_data():
+    init_db()  # Make sure the table exists
+    with sqlite3.connect(DATABASE) as conn:
+        c = conn.cursor()
+        c.execute('DELETE FROM study_sessions')
+
+        today = datetime.now()
+        for i in range(30):
+            date = today - timedelta(days=i)
+            if random.random() < 0.25:
+                continue
+            for _ in range(random.choice([1, 1, 2])):
+                session = random_study_session(date)
                 c.execute('''
-                    INSERT INTO studying (date, start, duree, subject, lieu)
+                    INSERT INTO study_sessions (date, time, hours, topic, location)
                     VALUES (?, ?, ?, ?, ?)
-                ''', (day.isoformat(), start, duree, subject, lieu))
+                ''', session)
 
         conn.commit()
-        print("✔ Base de données remplie avec des données fictives.")
+        print("✅ Seed data inserted.")
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     seed_data()
