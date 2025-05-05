@@ -82,84 +82,114 @@
         .change-negative {
             color: #dc3545;
         }
+        .card.h-100 {
+            height: 100%;
+        }
+        :root {
+            --color-empty: #ebedf0;
+            --color-level-1: #c6e48b;
+            --color-level-2: #7bc96f;
+            --color-level-3: #239a3b;
+            --color-level-4: #196127;
+            --color-future: #f4f4f4;
+        }
+
         .calendar-container {
-            padding: 20px;
             background: white;
-            border-radius: 10px;
+            padding: 20px;
+            border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             overflow-x: auto;
         }
+
+        .calendar-header {
+            margin-bottom: 20px;
+        }
+
+        .calendar-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #24292e;
+        }
+
+        .calendar-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .calendar-days {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-top: 25px;
+        }
+
+        .calendar-day {
+            height: 15px;
+            font-size: 12px;
+            color: #666;
+            text-align: right;
+            padding-right: 8px;
+        }
+
+        .calendar-content {
+            flex: 1;
+        }
+
+        .calendar-month-labels {
+            display: grid;
+            grid-template-columns: repeat(53, 15px);
+            gap: 4px;
+            margin-bottom: 5px;
+            height: 20px;
+        }
+
+        .calendar-month-label {
+            grid-row: 1;
+            font-size: 12px;
+            color: #666;
+            text-align: left;
+            padding-left: 2px;
+            overflow: visible;
+            white-space: nowrap;
+        }
+
         .calendar-grid {
             display: grid;
-            grid-template-columns: repeat(53, 1fr);
+            grid-template-columns: repeat(53, 15px);
+            grid-template-rows: repeat(7, 15px);
             gap: 4px;
-            margin-top: 10px;
-            min-width: 800px;
         }
+
         .calendar-cell {
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .calendar-cell:hover {
-            transform: scale(1.3);
-            z-index: 1;
-        }
-        .calendar-cell.today {
-            border: 2px solid #0d6efd;
-        }
-        .calendar-intensity-0 { background-color: #ebedf0; }
-        .calendar-intensity-1 { background-color: #c6e48b; }
-        .calendar-intensity-2 { background-color: #40c463; }
-        .calendar-intensity-3 { background-color: #30a14e; }
-        .calendar-intensity-4 { background-color: #216e39; }
-        .calendar-tooltip {
-            position: absolute;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            z-index: 1000;
-            max-width: 300px;
-            font-size: 14px;
-        }
-        .calendar-legend {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-            font-size: 12px;
-        }
-        .calendar-legend-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .calendar-legend-color {
             width: 15px;
             height: 15px;
             border-radius: 2px;
+            background-color: var(--color-empty);
+            transition: transform 0.2s;
         }
-        .calendar-month-labels {
-            display: grid;
-            grid-template-columns: repeat(53, 1fr);
-            gap: 4px;
-            margin-bottom: 5px;
+
+        .calendar-cell:hover {
+            transform: scale(1.2);
+            z-index: 1;
+        }
+
+        .calendar-cell[data-intensity="1"] { background-color: var(--color-level-1); }
+        .calendar-cell[data-intensity="2"] { background-color: var(--color-level-2); }
+        .calendar-cell[data-intensity="3"] { background-color: var(--color-level-3); }
+        .calendar-cell[data-intensity="4"] { background-color: var(--color-level-4); }
+        .calendar-cell.future { background-color: var(--color-future); }
+
+        .calendar-tooltip {
+            position: absolute;
+            background: #24292e;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
             font-size: 12px;
-            color: #666;
-            min-width: 800px;
-        }
-        .calendar-month-label {
-            text-align: center;
-            padding: 0 2px;
-        }
-        .card.h-100 {
-            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
     </style>
 </head>
@@ -263,33 +293,17 @@
             </div>
         </div>
 
-        <!-- Study Calendar -->
-        <div class="card">
-            <h3>Study Calendar</h3>
-            <div class="calendar-container">
-                <div class="calendar-month-labels" id="monthLabels"></div>
-                <div class="calendar-grid" id="calendarGrid"></div>
-                <div class="calendar-legend">
-                    <div class="calendar-legend-item">
-                        <div class="calendar-legend-color calendar-intensity-0"></div>
-                        <span>0h</span>
-                    </div>
-                    <div class="calendar-legend-item">
-                        <div class="calendar-legend-color calendar-intensity-1"></div>
-                        <span>1-2h</span>
-                    </div>
-                    <div class="calendar-legend-item">
-                        <div class="calendar-legend-color calendar-intensity-2"></div>
-                        <span>2-4h</span>
-                    </div>
-                    <div class="calendar-legend-item">
-                        <div class="calendar-legend-color calendar-intensity-3"></div>
-                        <span>4-6h</span>
-                    </div>
-                    <div class="calendar-legend-item">
-                        <div class="calendar-legend-color calendar-intensity-4"></div>
-                        <span>6h+</span>
-                    </div>
+        <!-- Study Calendar 2025 -->
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <h1 class="calendar-title">Study Calendar 2025</h1>
+            </div>
+            
+            <div class="calendar-wrapper">
+                <div class="calendar-days" id="dayLabels"></div>
+                <div class="calendar-content">
+                    <div class="calendar-month-labels" id="monthLabels"></div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
                 </div>
             </div>
         </div>
@@ -297,16 +311,14 @@
 
     <script>
         // Initialize charts
-        let lineChart, topicChart, hourlyChart, calendarChart;
+        let lineChart, topicChart, hourlyChart;
 
         // Fetch and update data
         async function fetchAndUpdateData() {
             try {
                 const response = await fetch('/api/study-data');
                 const data = await response.json();
-                console.log("Fetched data:", data); // Debug log
                 
-                // Validate data structure with more lenient checks
                 if (!data) {
                     console.error("No data received from server");
                     return;
@@ -316,7 +328,6 @@
                 data.dailyData = data.dailyData || [];
                 data.topicBalance = data.topicBalance || [];
                 data.hourlyData = data.hourlyData || [];
-                data.calendarData = data.calendarData || [];
                 data.movingAvgData = data.movingAvgData || [];
                 
                 updateCharts(data);
@@ -372,108 +383,6 @@
                     warning.textContent = `⚠️ ${topic.topic} is only ${topic.percentage}% of your study time`;
                     warnings.appendChild(warning);
                 }
-            });
-        }
-
-        // Helper function to get week number
-        function getWeekNumber(date) {
-            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-            const dayNum = d.getUTCDay() || 7;
-            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-        }
-
-        function getMonthLabel(date) {
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            return months[date.getMonth()];
-        }
-
-        function createCalendarTooltip(cell, data) {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'calendar-tooltip';
-            
-            let content = `<strong>${new Date(data.date).toLocaleDateString()}</strong><br>`;
-            if (data.hours > 0) {
-                content += `<br>Total: ${data.hours.toFixed(1)} hours`;
-                if (data.topics.length > 0) {
-                    content += `<br>Topics: ${data.topics.join(', ')}`;
-                }
-                if (data.sessions.length > 0) {
-                    content += '<br><br>Sessions:';
-                    data.sessions.forEach(session => {
-                        content += `<br>${session.time} - ${session.hours}h (${session.topic})`;
-                    });
-                }
-            } else {
-                content += '<br>No study sessions';
-            }
-            
-            tooltip.innerHTML = content;
-            return tooltip;
-        }
-
-        function updateCalendar(data) {
-            const calendarGrid = document.getElementById('calendarGrid');
-            const monthLabels = document.getElementById('monthLabels');
-            calendarGrid.innerHTML = '';
-            monthLabels.innerHTML = '';
-            
-            // Create month labels with proper spacing
-            const monthPositions = new Map();
-            data.calendarData.forEach(day => {
-                const date = new Date(day.date);
-                const month = date.getMonth();
-                const week = day.week;
-                if (!monthPositions.has(month)) {
-                    monthPositions.set(month, week);
-                }
-            });
-            
-            // Add month labels with proper spacing
-            Array.from(monthPositions.entries())
-                .sort((a, b) => a[1] - b[1])
-                .forEach(([month, week]) => {
-                    const label = document.createElement('div');
-                    label.className = 'calendar-month-label';
-                    label.textContent = getMonthLabel(new Date(2024, month, 1));
-                    label.style.gridColumn = week;
-                    monthLabels.appendChild(label);
-                });
-            
-            // Group data by week
-            const weeks = {};
-            data.calendarData.forEach(day => {
-                if (!weeks[day.week]) {
-                    weeks[day.week] = [];
-                }
-                weeks[day.week].push(day);
-            });
-            
-            // Create cells for each day
-            Object.values(weeks).forEach(week => {
-                week.forEach(day => {
-                    const cell = document.createElement('div');
-                    cell.className = `calendar-cell calendar-intensity-${day.intensity}`;
-                    if (day.isToday) cell.classList.add('today');
-                    
-                    // Add tooltip
-                    cell.addEventListener('mouseenter', (e) => {
-                        const tooltip = createCalendarTooltip(cell, day);
-                        document.body.appendChild(tooltip);
-                        
-                        const rect = cell.getBoundingClientRect();
-                        tooltip.style.left = `${rect.right + 10}px`;
-                        tooltip.style.top = `${rect.top}px`;
-                    });
-                    
-                    cell.addEventListener('mouseleave', () => {
-                        const tooltip = document.querySelector('.calendar-tooltip');
-                        if (tooltip) tooltip.remove();
-                    });
-                    
-                    calendarGrid.appendChild(cell);
-                });
             });
         }
 
@@ -602,9 +511,6 @@
                     }
                 }
             });
-
-            // Update calendar with calendarData
-            updateCalendar(data);
         }
 
         // Handle form submission
@@ -639,8 +545,121 @@
             }
         });
 
+        // Calendar functionality
+        let calendarData = [];
+        const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+        function createCalendarTooltip(cell, data) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'calendar-tooltip';
+            
+            let content = `<strong>${data.date}</strong><br>`;
+            if (data.hours > 0) {
+                content += `${data.hours} hours studied<br>`;
+                if (data.topics.length > 0) {
+                    content += `Topics: ${data.topics.join(', ')}`;
+                }
+            } else if (data.isFuture) {
+                content += 'Future date';
+            } else {
+                content += 'No study data';
+            }
+            
+            tooltip.innerHTML = content;
+            return tooltip;
+        }
+
+        function updateCalendar() {
+            const calendarGrid = document.getElementById('calendarGrid');
+            const monthLabels = document.getElementById('monthLabels');
+            const dayLabels = document.getElementById('dayLabels');
+            
+            calendarGrid.innerHTML = '';
+            monthLabels.innerHTML = '';
+            dayLabels.innerHTML = '';
+
+            // Add day labels
+            DAYS.forEach(day => {
+                const label = document.createElement('div');
+                label.className = 'calendar-day';
+                label.textContent = day;
+                dayLabels.appendChild(label);
+            });
+
+            // Create month labels with CSS grid
+            const months = {};
+            calendarData.forEach(day => {
+                const month = new Date(day.date).toLocaleString('default', { month: 'short' });
+                if (!months[month] || day.gridColumn < months[month].startCol) {
+                    months[month] = {
+                        startCol: day.gridColumn,
+                        endCol: day.gridColumn,
+                        name: month
+                    };
+                } else {
+                    months[month].endCol = day.gridColumn;
+                }
+            });
+
+            // Add month labels
+            Object.values(months).forEach(m => {
+                const label = document.createElement('div');
+                label.className = 'calendar-month-label';
+                label.textContent = m.name;
+                label.style.gridColumn = `${m.startCol} / span ${m.endCol - m.startCol + 1}`;
+                monthLabels.appendChild(label);
+            });
+
+            // Create cells
+            calendarData.forEach(day => {
+                const cell = document.createElement('div');
+                cell.className = 'calendar-cell';
+                if (day.isFuture) cell.classList.add('future');
+                cell.setAttribute('data-intensity', day.intensity);
+                cell.setAttribute('data-date', day.date);
+                cell.setAttribute('data-hours', day.hours);
+                cell.title = `${day.date} (Week ${day.week}, Weekday ${day.weekday})`;
+
+                // Position the cell in the grid
+                cell.style.gridColumn = day.gridColumn;
+                cell.style.gridRow = day.weekday + 1;  // 0-based weekday to 1-based grid row
+
+                // Add tooltip
+                cell.addEventListener('mouseenter', (e) => {
+                    const tooltip = createCalendarTooltip(cell, day);
+                    document.body.appendChild(tooltip);
+                    
+                    const rect = cell.getBoundingClientRect();
+                    tooltip.style.left = `${rect.left + window.scrollX}px`;
+                    tooltip.style.top = `${rect.top + window.scrollY - tooltip.offsetHeight - 10}px`;
+                });
+                
+                cell.addEventListener('mouseleave', () => {
+                    const tooltip = document.querySelector('.calendar-tooltip');
+                    if (tooltip) tooltip.remove();
+                });
+
+                calendarGrid.appendChild(cell);
+            });
+        }
+
+        async function fetchCalendarData() {
+            try {
+                const response = await fetch('/api/calendar-data');
+                const data = await response.json();
+                calendarData = data.calendarData;
+                updateCalendar();
+            } catch (error) {
+                console.error('Error fetching calendar data:', error);
+            }
+        }
+
         // Initial data load
         fetchAndUpdateData();
+        fetchCalendarData();
     </script>
 </body>
-</html> 
+</html>
+
+
+
