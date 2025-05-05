@@ -96,100 +96,11 @@ def calculate_streaks(daily_data):
         previous_day = current_day
     longest_streak = max(longest_streak, streak)
 
-    # Add debug information
-    print(f"Debug - Streak calculation:")
-    print(f"Minimum hours required: {MIN_HOURS_PER_DAY}")
-    print(f"Days meeting minimum: {len(studied_dates)}")
-    print(f"Current streak: {current_streak}")
-    print(f"Longest streak: {longest_streak}")
-
     return {
         'current': current_streak,
         'longest': longest_streak,
-        'minimumHours': MIN_HOURS_PER_DAY  # Include this in response for frontend display
+        'minimumHours': MIN_HOURS_PER_DAY
     }
-
-def get_calendar_data(daily_data):
-    """Generate calendar data for the heatmap visualization."""
-    # Initialize calendar data structure
-    calendar_data = []
-    today = datetime.now().date()
-    
-    # Get the start of the current year
-    start_date = datetime(today.year, 1, 1).date()
-    # Get the end of the current year
-    end_date = datetime(today.year, 12, 31).date()
-    
-    # Create a dictionary of study data for quick lookup
-    study_data = {
-        entry['date']: {
-            'hours': entry['hours'],
-            'topics': [],  # Will be populated from topic data
-            'sessions': []  # Will be populated from session data
-        }
-        for entry in daily_data
-    }
-    
-    # Get detailed session data for each day
-    with sqlite3.connect(DATABASE) as conn:
-        c = conn.cursor()
-        for date_str in study_data.keys():
-            c.execute('''
-                SELECT time, hours, topic, location
-                FROM study_sessions
-                WHERE date = ?
-                ORDER BY time
-            ''', (date_str,))
-            sessions = c.fetchall()
-            study_data[date_str]['sessions'] = [
-                {
-                    'time': session[0],
-                    'hours': session[1],
-                    'topic': session[2],
-                    'location': session[3]
-                }
-                for session in sessions
-            ]
-            # Get unique topics for the day
-            study_data[date_str]['topics'] = list(set(session[2] for session in sessions))
-    
-    # Generate calendar data
-    current_date = start_date
-    while current_date <= end_date:
-        date_str = current_date.strftime('%Y-%m-%d')
-        day_data = study_data.get(date_str, {'hours': 0, 'topics': [], 'sessions': []})
-        
-        # Calculate color intensity (0-4)
-        hours = day_data['hours']
-        if hours == 0:
-            intensity = 0
-        elif hours < 2:
-            intensity = 1
-        elif hours < 4:
-            intensity = 2
-        elif hours < 6:
-            intensity = 3
-        else:
-            intensity = 4
-        
-        calendar_data.append({
-            'date': date_str,
-            'day': current_date.day,
-            'month': current_date.month,
-            'year': current_date.year,
-            'weekday': current_date.weekday(),  # 0 = Monday, 6 = Sunday
-            'week': current_date.isocalendar()[1],  # ISO week number
-            'hours': hours,
-            'intensity': intensity,
-            'topics': day_data['topics'],
-            'sessions': day_data['sessions'],
-            'isToday': current_date == today,
-            'isWeekend': current_date.weekday() >= 5
-        })
-        
-        current_date += timedelta(days=1)
-    
-    return calendar_data
 
 # ========== API Routes ==========
 @app.route('/api/study-data')
@@ -201,10 +112,6 @@ def get_study_data():
         current_week_start, current_week_end = get_current_week_range()
         last_week_start, last_week_end = get_last_week_range()
         
-        print(f"Debug - Week ranges:")
-        print(f"Current week: {current_week_start} to {current_week_end}")
-        print(f"Last week: {last_week_start} to {last_week_end}")
-        
         # Daily Data
         c.execute('''
             SELECT date, SUM(hours) as total_hours
@@ -213,15 +120,12 @@ def get_study_data():
             ORDER BY date
         ''')
         daily_data = [{'date': row[0], 'hours': row[1]} for row in c.fetchall()]
-        print(f"Debug - Daily data count: {len(daily_data)}")
         
         # Calculate streaks
         streaks = calculate_streaks(daily_data)
-        print(f"Debug - Streaks: {streaks}")
         
         # Calculate moving average
         moving_avg_data = calculate_moving_average(daily_data)
-        print(f"Debug - Moving average data count: {len(moving_avg_data)}")
         
         # Current Week Total with daily breakdown
         c.execute('''
@@ -233,7 +137,6 @@ def get_study_data():
         ''', (current_week_start, current_week_end))
         current_week_daily = [{'date': row[0], 'hours': row[1]} for row in c.fetchall()]
         current_week_hours = sum(day['hours'] for day in current_week_daily)
-        print(f"Debug - Current week hours: {current_week_hours}")
         
         # Calculate days remaining in the week
         today = datetime.now().date()
@@ -251,7 +154,6 @@ def get_study_data():
             WHERE date BETWEEN ? AND ?
         ''', (last_week_start, last_week_end))
         last_week_hours = c.fetchone()[0] or 0
-        print(f"Debug - Last week hours: {last_week_hours}")
         
         # Calculate weekly change
         weekly_change = ((current_week_hours - last_week_hours) / last_week_hours * 100) if last_week_hours > 0 else 0
@@ -266,7 +168,6 @@ def get_study_data():
             ORDER BY total_hours DESC
         ''', (thirty_days_ago,))
         topic_data = [{'topic': row[0], 'hours': row[1]} for row in c.fetchall()]
-        print(f"Debug - Topic data count: {len(topic_data)}")
         
         # Calculate total hours for percentage
         total_hours = sum(t['hours'] for t in topic_data)
@@ -285,11 +186,6 @@ def get_study_data():
             ORDER BY hour
         ''')
         hourly_data = [{'hour': int(row[0]), 'hours': row[1]} for row in c.fetchall()]
-        print(f"Debug - Hourly data count: {len(hourly_data)}")
-        
-        # Calendar Heatmap Data - Full Year
-        calendar_data = get_calendar_data(daily_data)
-        print(f"Debug - Calendar data count: {len(calendar_data)}")
         
         response_data = {
             'dailyData': daily_data,
@@ -301,7 +197,6 @@ def get_study_data():
             },
             'topicBalance': topic_balance,
             'hourlyData': hourly_data,
-            'calendarData': calendar_data,  # Updated calendar data
             'goalProgress': {
                 'current': round(current_week_hours, 1),
                 'goal': WEEKLY_GOAL,
@@ -315,7 +210,6 @@ def get_study_data():
             'streaks': streaks
         }
         
-        print("Debug - Response data structure:", list(response_data.keys()))
         return jsonify(response_data)
 
 @app.route('/api/study-sessions', methods=['POST'])
@@ -354,6 +248,97 @@ def debug_today():
 def index():
     return render_template('index.html')
 
+# New Calendar Implementation
+def get_calendar_data():
+    """Generate calendar data for the heatmap visualization for the year 2025 only."""
+    calendar_data = []
+    today = datetime.now().date()
+    
+    # Calculate proper start date to align with Monday
+    first_day_of_year = datetime(2025, 1, 1).date()
+    # Go back to the Monday of the week containing Jan 1st
+    start_date = first_day_of_year - timedelta(days=first_day_of_year.weekday())
+    # Calculate end date to ensure we have complete weeks
+    end_date = datetime(2025, 12, 31).date()
+    last_weekday = end_date.weekday()
+    if last_weekday < 6:  # If not Sunday, extend to end of week
+        end_date = end_date + timedelta(days=6-last_weekday)
+    
+    with sqlite3.connect(DATABASE) as conn:
+        c = conn.cursor()
+        c.execute('''
+            SELECT date, SUM(hours) as total_hours,
+                   GROUP_CONCAT(DISTINCT topic) as topics
+            FROM study_sessions
+            WHERE date BETWEEN ? AND ?
+            GROUP BY date
+        ''', (start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')))
+        
+        study_data = {}
+        for row in c.fetchall():
+            date_str = row[0]
+            study_data[date_str] = {
+                'hours': row[1],
+                'topics': row[2].split(',') if row[2] else []
+            }
+    
+    # Generate calendar data
+    current_date = start_date
+    week_number = 1
+    
+    while current_date <= end_date:
+        date_str = current_date.strftime('%Y-%m-%d')
+        is_future = current_date > today
+        
+        # Calculate grid position
+        if current_date.weekday() == 0:  # If it's Monday
+            week_number += 1
+        
+        # Only include days from 2025 in the calendar data
+        if current_date.year == 2025:
+            day_data = study_data.get(date_str, {'hours': 0, 'topics': []})
+            
+            if is_future:
+                intensity = 0
+            else:
+                hours = day_data['hours']
+                if hours == 0:
+                    intensity = 0
+                elif hours < 2:
+                    intensity = 1
+                elif hours < 4:
+                    intensity = 2
+                elif hours < 6:
+                    intensity = 3
+                else:
+                    intensity = 4
+            
+            calendar_data.append({
+                'date': date_str,
+                'day': current_date.day,
+                'month': current_date.month,
+                'year': current_date.year,
+                'weekday': current_date.weekday(),  # 0 = Monday, 6 = Sunday
+                'week': week_number,
+                'gridColumn': week_number,
+                'hours': day_data['hours'],
+                'intensity': intensity,
+                'topics': day_data['topics'],
+                'isToday': current_date == today,
+                'isWeekend': current_date.weekday() >= 5,
+                'isFuture': is_future
+            })
+        
+        current_date += timedelta(days=1)
+    
+    return calendar_data
+
+@app.route('/api/calendar-data')
+def get_calendar():
+    return jsonify({
+        'calendarData': get_calendar_data()
+    })
+
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True)
+    app.run(debug=True) 
