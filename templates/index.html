@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-calendar"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 1rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .btn-primary {
+            background-color: #0d6efd;
+            border: none;
+            padding: 0.5rem 1.5rem;
+        }
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+        }
+        .streak-card {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            color: white;
+        }
+        .streak-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+        .goal-progress {
+            height: 1.5rem;
+            background-color: #e9ecef;
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        .goal-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #0d6efd, #0a58ca);
+            transition: width 0.3s ease;
+        }
+        .topic-warning {
+            border: 2px solid #dc3545;
+            padding: 0.5rem;
+            border-radius: 5px;
+            margin-top: 0.5rem;
+        }
+        .weekly-comparison {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .change-positive {
+            color: #198754;
+        }
+        .change-negative {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Study Tracker</h1>
+        
+        <!-- Stats Overview -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="streak-card">
+                    <h3>Current Streak</h3>
+                    <div class="streak-number" id="currentStreak">0</div>
+                    <div>days</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <h3>Weekly Goal</h3>
+                    <div class="goal-progress">
+                        <div class="goal-progress-bar" id="goalProgress" style="width: 0%"></div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <span id="goalText">0 / 10 hours</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="weekly-comparison">
+                    <h3>Weekly Change</h3>
+                    <div class="h4" id="weeklyChange">0%</div>
+                    <div class="small">vs last week</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Study Session Form -->
+        <div class="card">
+            <h2>Add Study Session</h2>
+            <form id="studyForm">
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label for="date">Date</label>
+                        <input type="date" class="form-control" id="date" required>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="time">Time</label>
+                        <input type="time" class="form-control" id="time" required>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="hours">Hours</label>
+                        <input type="number" class="form-control" id="hours" step="0.5" min="0.5" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label for="topic">Topic</label>
+                        <input type="text" class="form-control" id="topic" required>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label for="location">Location</label>
+                        <input type="text" class="form-control" id="location" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Session</button>
+            </form>
+        </div>
+
+        <!-- Analytics Charts -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <h3>Study Hours Over Time</h3>
+                    <div class="chart-container">
+                        <canvas id="lineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <h3>Topic Balance</h3>
+                    <div class="chart-container">
+                        <canvas id="topicChart"></canvas>
+                    </div>
+                    <div id="topicWarnings"></div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <h3>Most Productive Hours</h3>
+                    <div class="chart-container">
+                        <canvas id="hourlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <h3>Study Calendar</h3>
+                    <div class="chart-container">
+                        <canvas id="calendarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize charts
+        let lineChart, topicChart, hourlyChart, calendarChart;
+
+        // Fetch and update data
+        async function fetchAndUpdateData() {
+            try {
+                const response = await fetch('/api/study-data');
+                const data = await response.json();
+                console.log("Fetched data:", data); // Debug log
+                
+                // Validate data structure
+                if (!data.dailyData) {
+                    console.error("Missing dailyData in response:", data);
+                    return;
+                }
+                if (!data.topicBalance) {
+                    console.error("Missing topicBalance in response:", data);
+                    return;
+                }
+                if (!data.hourlyData) {
+                    console.error("Missing hourlyData in response:", data);
+                    return;
+                }
+                if (!data.heatmapData) {
+                    console.error("Missing heatmapData in response:", data);
+                    return;
+                }
+                
+                updateCharts(data);
+                updateStats(data);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        // Update statistics
+        function updateStats(data) {
+            // Update streaks
+            const streaks = data.streaks || { current: 0, longest: 0 };
+            document.getElementById('currentStreak').textContent = streaks.current;
+            
+            // Update goal progress
+            const goalProgress = document.getElementById('goalProgress');
+            const goalText = document.getElementById('goalText');
+            const progress = data.goalProgress || { current: 0, goal: 10, percentage: 0 };
+            goalProgress.style.width = `${progress.percentage}%`;
+            goalText.textContent = `${progress.current} / ${progress.goal} hours`;
+            
+            // Update weekly comparison
+            const weeklyChange = document.getElementById('weeklyChange');
+            const comparison = data.weeklyComparison || { current: 0, last: 0, change: 0 };
+            const change = comparison.change;
+            weeklyChange.textContent = `${change > 0 ? '+' : ''}${change}%`;
+            weeklyChange.className = `h4 ${change >= 0 ? 'change-positive' : 'change-negative'}`;
+            
+            // Update topic warnings
+            const warnings = document.getElementById('topicWarnings');
+            warnings.innerHTML = '';
+            const topics = data.topicBalance || [];
+            topics.forEach(topic => {
+                if (topic.percentage < 10) {
+                    const warning = document.createElement('div');
+                    warning.className = 'topic-warning';
+                    warning.textContent = `⚠️ ${topic.topic} is only ${topic.percentage}% of your study time`;
+                    warnings.appendChild(warning);
+                }
+            });
+        }
+
+        // Update all charts with new data
+        function updateCharts(data) {
+            // Line Chart
+            if (lineChart) lineChart.destroy();
+            const movingAvgData = data.movingAvgData || data.dailyData || [];
+            lineChart = new Chart(document.getElementById('lineChart'), {
+                type: 'line',
+                data: {
+                    labels: movingAvgData.map(d => d.date),
+                    datasets: [{
+                        label: '7-Day Moving Average',
+                        data: movingAvgData.map(d => d.hours),
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 0,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} hours`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Study Hours'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 8
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Topic Balance Chart
+            if (topicChart) topicChart.destroy();
+            const topicData = data.topicBalance || [];
+            topicChart = new Chart(document.getElementById('topicChart'), {
+                type: 'pie',
+                data: {
+                    labels: topicData.map(t => t.topic),
+                    datasets: [{
+                        data: topicData.map(t => t.hours),
+                        backgroundColor: [
+                            '#0d6efd', '#6610f2', '#6f42c1', '#d63384',
+                            '#dc3545', '#fd7e14', '#ffc107'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const topic = topicData[context.dataIndex];
+                                    return `${topic.topic}: ${topic.percentage}% (${topic.hours.toFixed(1)}h)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Hourly Productivity Chart
+            if (hourlyChart) hourlyChart.destroy();
+            const hourlyData = data.hourlyData || [];
+            hourlyChart = new Chart(document.getElementById('hourlyChart'), {
+                type: 'bar',
+                data: {
+                    labels: hourlyData.map(h => `${h.hour}:00`),
+                    datasets: [{
+                        label: 'Study Hours',
+                        data: hourlyData.map(h => h.hours),
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.parsed.y.toFixed(1)} hours`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Study Hours'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Hour of Day'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Calendar Heatmap
+            if (calendarChart) calendarChart.destroy();
+            const heatmapData = data.heatmapData || [];
+            calendarChart = new Chart(document.getElementById('calendarChart'), {
+                type: 'calendar',
+                data: {
+                    datasets: [{
+                        data: heatmapData.map(d => ({
+                            x: new Date(d.date),
+                            y: d.hours
+                        }))
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.parsed.y.toFixed(1)} hours`;
+                                }
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Handle form submission
+        document.getElementById('studyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                date: document.getElementById('date').value,
+                time: document.getElementById('time').value,
+                hours: parseFloat(document.getElementById('hours').value),
+                topic: document.getElementById('topic').value,
+                location: document.getElementById('location').value
+            };
+
+            try {
+                const response = await fetch('/api/study-sessions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    e.target.reset();
+                    fetchAndUpdateData();
+                } else {
+                    console.error('Error adding study session');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        // Initial data load
+        fetchAndUpdateData();
+    </script>
+</body>
+</html> 
