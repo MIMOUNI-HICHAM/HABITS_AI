@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Habit Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2><i class="fas fa-chart-line"></i> <span>Habit Tracker</span></h2>
+        <nav>
+            <a href="/" class="active"><i class="fas fa-home"></i> <span>Dashboard</span></a>
+            <a href="#"><i class="fas fa-plus"></i> <span>Add Habit</span></a>
+            <a href="#"><i class="fas fa-tasks"></i> <span>Manage Habits</span></a>
+            <a href="#"><i class="fas fa-cog"></i> <span>Settings</span></a>
+            <a href="#"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a>
+        </nav>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <h1>Budget Habit Dashboard</h1>
+            <div class="date-display">{{ current_date }}</div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Performance Chart -->
+            <div class="card performance-container">
+                <div class="card-header">
+                    <h3>Weekly Budget Performance</h3>
+                    <div class="chart-legend">
+                        <span class="legend-item"><span class="legend-color" style="background: #6366f1"></span> Daily Budget %</span>
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <canvas id="budgetChart"></canvas>
+                </div>
+                
+                <div class="circular-metrics">
+                    <div class="metric">
+                        <h3>Last Week</h3>
+                        <div class="circle" data-percent="{{ last_week_percent }}" style="--percentage: {{ last_week_percent }}%">{{ last_week_percent }}%</div>
+                    </div>
+                    <div class="metric">
+                        <h3>This Week</h3>
+                        <div class="circle" data-percent="{{ this_week_percent }}" style="--percentage: {{ this_week_percent }}%">{{ this_week_percent }}%</div>
+                    </div>
+                    <div class="metric">
+                        <h3>Today</h3>
+                        <div class="circle" data-percent="{{ today_percent }}" style="--percentage: {{ today_percent }}%">{{ today_percent }}%</div>
+                    </div>
+                    <div class="metric">
+                        <h3>All Time</h3>
+                        <div class="circle" data-percent="{{ all_time_average }}" style="--percentage: {{ all_time_average }}%">{{ all_time_average }}%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar -->
+            <div class="card calendar">
+                <div class="card-header">
+                    <h3>Monthly Progress</h3>
+                    <button class="btn-icon"><i class="fas fa-ellipsis-h"></i></button>
+                </div>
+                <div class="calendar-grid">
+                    {% for day in calendar_days %}
+                        <div class="calendar-day {% if day.within_budget %}within-budget{% endif %}">{{ day.day }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Budget Log Table -->
+            <div class="card table-container">
+                <div class="card-header">
+                    <h3>Recent Budget Entries</h3>
+                    <button class="btn-small">View All</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in history %}
+                        <tr>
+                            <td>{{ entry.date }}</td>
+                            <td>{{ entry.day_name }}</td>
+                            <td>
+                                <span class="status {% if entry.within_budget %}completed{% else %}missed{% endif %}">
+                                    {% if entry.within_budget %}
+                                        <i class="fas fa-check-circle"></i> Within Budget
+                                    {% else %}
+                                        <i class="fas fa-times-circle"></i> Over Budget
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td><button class="btn-small btn-outline">View</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chart Configuration
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('budgetChart').getContext('2d');
+            const budgetChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: {{ chart_labels | tojson | safe }},
+                    datasets: [{
+                        label: 'Budget Usage %',
+                        data: {{ chart_data | tojson | safe }},
+                        backgroundColor: '#6366f1',
+                        borderRadius: 6,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y + '% of daily budget';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            },
+                            grid: {
+                                color: '#e2e8f0'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Add current day highlight
+            const today = new Date();
+            const todayLabel = today.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric' 
+            }).replace(' ', '-');
+            
+            const chartLabels = {{ chart_labels | tojson | safe }};
+            const index = chartLabels.indexOf(todayLabel);
+            
+            if (index !== -1) {
+                budgetChart.data.datasets[0].backgroundColor[index] = '#f43f5e';
+                budgetChart.update();
+            }
+        });
+    </script>
+</body>
+</html> 
