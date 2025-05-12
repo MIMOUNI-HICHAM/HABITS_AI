@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Habits Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #818cf8;
+            --success: #10b981;
+            --success-light: #34d399;
+            --warning: #f59e0b;
+            --warning-light: #fbbf24;
+            --info: #8b5cf6;
+            --info-light: #a78bfa;
+            --background: #f1f5f9;
+            --card-bg: rgba(255, 255, 255, 0.7);
+            --text: #1e293b;
+            --text-light: #64748b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            background: var(--background);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .background-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 0% 0%, rgba(79, 70, 229, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 100% 0%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 0% 100%, rgba(245, 158, 11, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .background-pattern::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text);
+            text-align: center;
+            line-height: 1.2;
+            background: linear-gradient(135deg, var(--primary), var(--info));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 30px rgba(79, 70, 229, 0.2);
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-light);
+            margin-bottom: 3rem;
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 1200px;
+            padding: 1rem;
+        }
+
+        .module-button {
+            position: relative;
+            padding: 2rem;
+            color: var(--text);
+            border: none;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.25rem;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                       0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .module-button::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: -1;
+        }
+
+        .module-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                       0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .module-button:hover::before {
+            opacity: 1;
+        }
+
+        .emoji {
+            font-size: 2.5rem;
+            transition: all 0.4s ease;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+        }
+
+        .module-button:hover .emoji {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .module-content {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+            transition: all 0.4s ease;
+        }
+
+        .module-title {
+            font-weight: 600;
+            color: inherit;
+            transition: color 0.4s ease;
+        }
+
+        .module-description {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            font-weight: 400;
+            transition: color 0.4s ease;
+        }
+
+        .module-button:hover .module-description {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .sports {
+            border-left: 4px solid var(--primary);
+        }
+
+        .budget {
+            border-left: 4px solid var(--warning);
+        }
+
+        .sleeping {
+            border-left: 4px solid var(--info);
+        }
+
+        .studying {
+            border-left: 4px solid var(--success);
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-light), var(--primary));
+            width: 0;
+            transition: width 0.4s ease;
+        }
+
+        .module-button:hover .progress-bar {
+            width: 100%;
+        }
+
+        .stats {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-light);
+            transition: all 0.4s ease;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .module-button:hover .stats {
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            .module-grid {
+                grid-template-columns: 1fr;
+            }
+            .module-button {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-pattern"></div>
+    <h1>Track Your Habits</h1>
+    <p class="subtitle">Build a better version of yourself, one habit at a time. Your journey to self-improvement starts here.</p>
+    <div class="module-grid">
+        <a href="/sports/" class="module-button sports">
+            <span class="emoji">🏃‍♂️</span>
+            <div class="module-content">
+                <span class="module-title">Sports Tracker</span>
+                <span class="module-description">Track your workouts and fitness goals</span>
+            </div>
+            <span class="stats">7 day streak 🔥</span>
+            <div class="progress-bar"></div>
+        </a>
+        <a href="/budget/" class="module-button budget">
+            <span class="emoji">💰</span>
+            <div class="module-content">
+                <span class="module-title">Budget Tracker</span>
+                <span class="module-description">Manage your finances and savings</span>
+            </div>
+            <span class="stats">$2,450 saved 💪</span>
+            <div class="progress-bar"></div>
+        </a>
+        <a href="/sleeping/" class="module-button sleeping">
+            <span class="emoji">😴</span>
+            <div class="module-content">
+                <span class="module-title">Sleep Tracker</span>
+                <span class="module-description">Monitor your sleep patterns</span>
+            </div>
+            <span class="stats">8.5h avg 🌙</span>
+            <div class="progress-bar"></div>
+        </a>
+        <a href="/studying/" class="module-button studying">
+            <span class="emoji">📚</span>
+            <div class="module-content">
+                <span class="module-title">Study Tracker</span>
+                <span class="module-description">Track your learning progress</span>
+            </div>
+            <span class="stats">12h this week 📈</span>
+            <div class="progress-bar"></div>
+        </a>
+    </div>
+</body>
+</html>
