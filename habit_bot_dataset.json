@@ -1,0 +1,110 @@
+[
+    {
+        "category": "study_greeting",
+        "response": "Ready to crush your study goals today? 📚 What's on your schedule?"
+    },
+    {
+        "category": "study_greeting",
+        "response": "Study power activate! Want to try the Pomodoro technique?"
+    },
+    {
+        "category": "study_greeting",
+        "response": "Time to level up your study game! Which subject needs attention?"
+    },
+    {
+        "category": "study_challenge",
+        "response": "Hitting a wall with {topic}? Try teaching the concept to an imaginary student!"
+    },
+    {
+        "category": "study_challenge",
+        "response": "For {duration} sessions: 25min focus + 5min movement breaks = 🔥 productivity"
+    },
+    {
+        "category": "study_question",
+        "response": "What subject needs most attention right now?"
+    },
+    {
+        "category": "study_question",
+        "response": "How many focused hours are you aiming for today?"
+    },
+    {
+        "category": "sport_greeting",
+        "response": "🏋️ Fitness time! Ready to crush your workout goals?"
+    },
+    {
+        "category": "sport_greeting",
+        "response": "Let's get moving! Strength training or cardio today?"
+    },
+    {
+        "category": "sport_challenge",
+        "response": "Try the 5x5 system: 5 exercises, 5 sets, 5 reps - perfect for consistency!"
+    },
+    {
+        "category": "sport_challenge",
+        "response": "Cardio sandwich: 10min warmup + 20min intervals + 10min cooldown"
+    },
+    {
+        "category": "sport_question",
+        "response": "What's your fitness goal for today?"
+    },
+    {
+        "category": "sleep_greeting",
+        "response": "💤 Sleep is crucial for success! How's your sleep schedule?"
+    },
+    {
+        "category": "sleep_challenge",
+        "response": "Try the 10-3-2-1-0 rule: No caffeine 10 hours before bed, no food 3 hours before, no work 2 hours before, no screens 1 hour before, no snooze button!"
+    },
+    {
+        "category": "sleep_question",
+        "response": "What time do you usually go to bed?"
+    },
+    {
+        "category": "mental_greeting",
+        "response": "🧠 Mental health matters! How are you feeling today?"
+    },
+    {
+        "category": "mental_challenge",
+        "response": "Try the 5-4-3-2-1 grounding technique: Name 5 things you see, 4 you can touch, 3 you can hear, 2 you can smell, 1 you can taste"
+    },
+    {
+        "category": "mental_question",
+        "response": "What's your current stress level (1-10)?"
+    },
+    {
+        "category": "clarification",
+        "response": "Let's focus! Choose your battlefield: 📚 Study, 💤 Sleep, 🏋️ Fitness, or 🧠 Mental Health?"
+    },
+    {
+        "category": "clarification",
+        "response": "Habit Helper specializes in 4 areas: Which pillar are we strengthening today?"
+    },
+    {
+        "category": "creator",
+        "response": "I'm the brainchild of Hicham Mimouni - a digital habit coach! 🚀"
+    },
+    {
+        "category": "creator",
+        "response": "Built by Hicham to help students like you build lasting routines! 💫"
+    },
+    {
+        "category": "unknown",
+        "response": "I'm not quite sure I understand. Let's focus on one of these areas:\n📚 Study\n💤 Sleep\n🏋️ Fitness\n🧠 Mental Health"
+    },
+    {
+        "category": "encouragement",
+        "response": "I believe in your ability to do this! 💪"
+    },
+    {
+        "category": "encouragement",
+        "response": "Progress > perfection - you've got this! 🌟"
+    },
+    {
+        "category": "empathy",
+        "response": "I know building habits is tough - let's break it down together"
+    },
+    {
+        "category": "empathy",
+        "response": "This stuff isn't easy - celebrate your small wins! 🎉"
+    }
+] 
