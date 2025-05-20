@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Habit Helper Bot</title>
+    <link rel="stylesheet" href="{{ url_for('ai_assistant.static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>Habit Helper Bot</h1>
+            <p class="subtitle">Your personal habit development assistant</p>
+        </div>
+        <div id="chatbox"></div>
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Share your thoughts or ask for advice..." autofocus>
+            <button onclick="sendMessage()" class="send-button">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Function to scroll chat to bottom
+        function scrollToBottom() {
+            const chatbox = document.getElementById("chatbox");
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        // Function to add a message to the chat
+        function addMessage(message, isUser = false) {
+            const chatbox = document.getElementById("chatbox");
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            const contentDiv = document.createElement("div");
+            contentDiv.className = "message-content";
+            contentDiv.textContent = message;
+            messageDiv.appendChild(contentDiv);
+            chatbox.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        // Function to type out a message
+        function typeWriter(element, text, speed = 30) {
+            let i = 0;
+            element.innerHTML = '';
+            const typing = setInterval(() => {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                    scrollToBottom();
+                } else {
+                    clearInterval(typing);
+                }
+            }, speed);
+        }
+
+        // Test server connection
+        async function testServer() {
+            try {
+                const response = await fetch('/ai-assistant/test');
+                const data = await response.json();
+                console.log('Server test:', data);
+                if (data.status === 'ok') {
+                    addMessage('Server is connected! How can I help you today?', false);
+                }
+            } catch (error) {
+                console.error('Server test failed:', error);
+                addMessage('Warning: Server connection test failed. Some features may not work.', false);
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById("user-input");
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Add user message
+            addMessage(message, true);
+            input.value = "";
+
+            // Add bot message container
+            const chatbox = document.getElementById("chatbox");
+            const botDiv = document.createElement("div");
+            botDiv.className = "message bot-message";
+            const botContent = document.createElement("div");
+            botContent.className = "message-content";
+            botDiv.appendChild(botContent);
+            chatbox.appendChild(botDiv);
+            scrollToBottom();
+
+            // Show typing indicator
+            botContent.innerHTML = '<span class="typing-indicator">...</span>';
+
+            try {
+                console.log('Sending message:', message);
+                const response = await fetch("/ai-assistant/send_message", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({message})
+                });
+
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                }
+
+                // Remove typing indicator and start typing animation
+                botContent.innerHTML = '';
+                typeWriter(botContent, data.response);
+            } catch (error) {
+                console.error('Error:', error);
+                botContent.innerHTML = `Error: ${error.message}. Please try again.`;
+            }
+        }
+
+        // Allow sending message with Enter key
+        document.getElementById("user-input").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                sendMessage();
+            }
+        });
+
+        // Initialize on page load
+        window.onload = function() {
+            document.getElementById("user-input").focus();
+            scrollToBottom();
+            testServer();  // Test server connection on load
+        };
+    </script>
+</body>
+</html> 
