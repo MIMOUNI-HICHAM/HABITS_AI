@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+
+{% block title %}NEXUS AI Assistant{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --primary: #6366f1;
+        --primary-light: #818cf8;
+        --info: #8b5cf6;
+        --background: #0f172a;
+        --card-bg: rgba(30, 41, 59, 0.8);
+        --text: #e2e8f0;
+        --text-light: #94a3b8;
+        --accent: #22d3ee;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        min-height: 100vh;
+        background: var(--background);
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .background-pattern {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: 
+            radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 100% 0%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 100% 100%, rgba(34, 211, 238, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 0% 100%, rgba(99, 102, 241, 0.15) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    .background-pattern::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        opacity: 0.5;
+    }
+
+    .chat-container {
+        width: 100%;
+        max-width: 800px;
+        height: 90vh;
+        background: var(--card-bg);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        position: relative;
+    }
+
+    .chat-container::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+        pointer-events: none;
+    }
+
+    .chat-header {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, var(--primary), var(--info));
+        color: white;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .chat-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
+    .chat-header h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .chat-header .subtitle {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    #chatbox {
+        flex: 1;
+        padding: 1.5rem;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        scrollbar-width: thin;
+        scrollbar-color: var(--primary) var(--card-bg);
+    }
+
+    #chatbox::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #chatbox::-webkit-scrollbar-track {
+        background: var(--card-bg);
+    }
+
+    #chatbox::-webkit-scrollbar-thumb {
+        background: var(--primary);
+        border-radius: 3px;
+    }
+
+    .message {
+        max-width: 80%;
+        padding: 1rem;
+        border-radius: 15px;
+        animation: fadeIn 0.3s ease-out;
+        position: relative;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .user-message {
+        align-self: flex-end;
+        background: linear-gradient(135deg, var(--primary), var(--info));
+        color: white;
+        border-bottom-right-radius: 5px;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+
+    .bot-message {
+        align-self: flex-start;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom-left-radius: 5px;
+        backdrop-filter: blur(5px);
+    }
+
+    .message-content {
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .typing-indicator {
+        display: inline-block;
+        animation: typing 1s infinite;
+    }
+
+    @keyframes typing {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
+    }
+
+    .input-container {
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.05);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        gap: 0.5rem;
+        position: relative;
+    }
+
+    .input-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    }
+
+    #user-input {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 25px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text);
+        transition: all 0.3s ease;
+    }
+
+    #user-input::placeholder {
+        color: var(--text-light);
+    }
+
+    #user-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .send-button {
+        width: 45px;
+        height: 45px;
+        border: none;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--info));
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .send-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+
+    .send-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .send-button:hover::before {
+        transform: translateX(100%);
+    }
+
+    .send-button svg {
+        width: 24px;
+        height: 24px;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    }
+
+    @media (max-width: 768px) {
+        .chat-container {
+            height: 100vh;
+            border-radius: 0;
+        }
+
+        .message {
+            max-width: 90%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="background-pattern"></div>
+<div class="chat-container">
+    <div class="chat-header">
+        <h1>NEXUS AI Assistant</h1>
+        <p class="subtitle">Your personal habit development guide</p>
+    </div>
+    <div id="chatbox"></div>
+    <div class="input-container">
+        <input type="text" id="user-input" placeholder="Ask me anything about your habits..." autofocus>
+        <button onclick="sendMessage()" class="send-button">
+            <svg viewBox="0 0 24 24" width="24" height="24">
+                <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+            </svg>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Function to scroll chat to bottom
+    function scrollToBottom() {
+        const chatbox = document.getElementById("chatbox");
+        chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    // Function to add a message to the chat
+    function addMessage(message, isUser = false) {
+        const chatbox = document.getElementById("chatbox");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+        const contentDiv = document.createElement("div");
+        contentDiv.className = "message-content";
+        contentDiv.textContent = message;
+        messageDiv.appendChild(contentDiv);
+        chatbox.appendChild(messageDiv);
+        scrollToBottom();
+    }
+
+    // Function to type out a message
+    function typeWriter(element, text, speed = 30) {
+        let i = 0;
+        element.innerHTML = '';
+        const typing = setInterval(() => {
+            if (i < text.length) {
+                element.innerHTML += text.charAt(i);
+                i++;
+                scrollToBottom();
+            } else {
+                clearInterval(typing);
+            }
+        }, speed);
+    }
+
+    // Test server connection
+    async function testServer() {
+        try {
+            const response = await fetch('/ai-assistant/test');
+            const data = await response.json();
+            console.log('Server test:', data);
+            if (data.status === 'ok') {
+                addMessage('Server is connected! How can I help you today?', false);
+            }
+        } catch (error) {
+            console.error('Server test failed:', error);
+            addMessage('Warning: Server connection test failed. Some features may not work.', false);
+        }
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById("user-input");
+        const message = input.value.trim();
+        if (!message) return;
+
+        // Add user message
+        addMessage(message, true);
+        input.value = "";
+
+        // Add bot message container
+        const chatbox = document.getElementById("chatbox");
+        const botDiv = document.createElement("div");
+        botDiv.className = "message bot-message";
+        const botContent = document.createElement("div");
+        botContent.className = "message-content";
+        botDiv.appendChild(botContent);
+        chatbox.appendChild(botDiv);
+        scrollToBottom();
+
+        // Show typing indicator
+        botContent.innerHTML = '<span class="typing-indicator">...</span>';
+
+        try {
+            console.log('Sending message:', message);
+            const response = await fetch("/ai-assistant/send_message", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({message})
+            });
+
+            console.log('Response status:', response.status);
+            const data = await response.json();
+            console.log('Response data:', data);
+
+            if (!response.ok) {
+                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            }
+
+            // Remove typing indicator and start typing animation
+            botContent.innerHTML = '';
+            typeWriter(botContent, data.response);
+        } catch (error) {
+            console.error('Error:', error);
+            botContent.innerHTML = `Error: ${error.message}. Please try again.`;
+        }
+    }
+
+    // Allow sending message with Enter key
+    document.getElementById("user-input").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
+            sendMessage();
+        }
+    });
+
+    // Initialize on page load
+    window.onload = function() {
+        document.getElementById("user-input").focus();
+        scrollToBottom();
+        testServer();  // Test server connection on load
+    };
+</script>
+{% endblock %} 

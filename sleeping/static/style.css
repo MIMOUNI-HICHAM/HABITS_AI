@@ -1,15 +1,15 @@
 :root {
-    --primary: #00b4d8;  /* Energetic blue */
-    --primary-light: #48cae4;
-    --primary-dark: #0077b6;
-    --secondary: #ff4d6d;  /* Vibrant pink */
-    --success: #06d6a0;  /* Fresh green */
-    --warning: #ffd166;  /* Energetic yellow */
-    --danger: #ef476f;  /* Alert red */
-    --dark: #1d3557;  /* Deep navy */
-    --light: #f8f9fa;
-    --gray: #6c757d;
-    --gray-light: #e9ecef;
+    --primary: #4834d4;  /* Deep night blue */
+    --primary-light: #686de0;
+    --primary-dark: #30336b;
+    --secondary: #be2edd;  /* Dreamy purple */
+    --success: #6ab04c;  /* Calm green */
+    --warning: #f0932b;  /* Warm orange */
+    --danger: #eb4d4b;  /* Alert red */
+    --dark: #130f40;  /* Deep night */
+    --light: #dff9fb;
+    --gray: #95afc0;
+    --gray-light: #c7ecee;
 }
 
 * {
@@ -20,7 +20,7 @@
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: linear-gradient(135deg, #dff9fb 0%, #c7ecee 100%);
     color: var(--dark);
     display: flex;
     min-height: 100vh;
@@ -79,7 +79,7 @@ body {
     flex: 1;
     margin-left: 240px;
     padding: 2rem;
-    background: url('https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
+    background: url('https://images.unsplash.com/photo-1511295742362-92c96b1cf484?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
     background-size: cover;
     position: relative;
 }
@@ -248,85 +248,78 @@ table {
     overflow: hidden;
 }
 
-th, td {
+th {
+    background-color: var(--primary);
+    color: white;
+    font-weight: 600;
     padding: 1rem;
     text-align: left;
+}
+
+td {
+    padding: 1rem;
     border-bottom: 1px solid var(--gray-light);
 }
 
-th {
-    font-weight: 600;
-    color: var(--primary-dark);
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-    background: rgba(0, 180, 216, 0.1);
-}
-
 tr:hover {
-    background-color: rgba(0, 180, 216, 0.05);
+    background-color: rgba(72, 52, 212, 0.05);
 }
 
 .status {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
     padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
+    border-radius: 1rem;
+    font-size: 0.875rem;
     font-weight: 500;
 }
 
 .status.completed {
-    background-color: rgba(6, 214, 160, 0.1);
+    background-color: rgba(106, 176, 76, 0.1);
     color: var(--success);
 }
 
 .status.missed {
-    background-color: rgba(239, 71, 111, 0.1);
+    background-color: rgba(235, 77, 75, 0.1);
     color: var(--danger);
 }
 
-/* Activity Type Badges */
 .activity-badge {
-    display: inline-flex;
-    align-items: center;
     padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-weight: 500;
+    border-radius: 1rem;
     font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-block;
 }
 
-.activity-badge.running {
-    background-color: rgba(0, 180, 216, 0.1);
+.activity-badge.deep-sleep {
+    background-color: rgba(72, 52, 212, 0.1);
     color: var(--primary);
 }
 
-.activity-badge.swimming {
-    background-color: rgba(6, 214, 160, 0.1);
-    color: var(--success);
-}
-
-.activity-badge.cycling {
-    background-color: rgba(255, 77, 109, 0.1);
+.activity-badge.light-sleep {
+    background-color: rgba(190, 46, 221, 0.1);
     color: var(--secondary);
 }
 
-.activity-badge.gym {
-    background-color: rgba(255, 209, 102, 0.1);
+.activity-badge.rem {
+    background-color: rgba(240, 147, 43, 0.1);
     color: var(--warning);
 }
 
-.activity-badge.yoga {
-    background-color: rgba(0, 119, 182, 0.1);
-    color: var(--primary-dark);
+.activity-badge.nap {
+    background-color: rgba(106, 176, 76, 0.1);
+    color: var(--success);
+}
+
+.activity-badge.interrupted {
+    background-color: rgba(235, 77, 75, 0.1);
+    color: var(--danger);
 }
 
 .activity-badge.other {
-    background-color: rgba(108, 117, 125, 0.1);
+    background-color: rgba(149, 175, 192, 0.1);
     color: var(--gray);
 }
 
-/* Responsive Design */
 @media (max-width: 1024px) {
     .dashboard-grid {
         grid-template-columns: repeat(6, 1fr);
@@ -339,7 +332,7 @@ tr:hover {
 
 @media (max-width: 768px) {
     .sidebar {
-        width: 64px;
+        width: 60px;
     }
     
     .sidebar h2 span {
@@ -351,7 +344,7 @@ tr:hover {
     }
     
     .main {
-        margin-left: 64px;
+        margin-left: 60px;
     }
     
     .activity-metrics {

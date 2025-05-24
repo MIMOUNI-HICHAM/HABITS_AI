@@ -1,0 +1,219 @@
+# Changes Made to Fix Calendar Data Mapping and MySQL Integration
+
+## 1. Database Connection Changes
+- Replaced SQLite with MySQL in all database operations
+- Updated connection logic to use `get_connection()` from `database/connection.py`
+- Modified SQL queries to use MySQL syntax (using `%s` instead of `?` for parameters)
+- Added proper error handling for database connections
+
+## 2. Calendar Data Fetching (studying/logic.py, sleeping/logic.py, sports/logic.py)
+### SQL Query Improvements
+```sql
+SELECT DATE(date) as date, 
+       SUM(hours) as total_hours, 
+       GROUP_CONCAT(DISTINCT subject SEPARATOR ',') as subjects
+FROM studying_entries
+WHERE date BETWEEN %s AND %s AND user_id = %s
+GROUP BY DATE(date)
+ORDER BY date
+```
+- Added `DATE(date)` to ensure consistent date format
+- Used `GROUP_CONCAT` with `DISTINCT` to avoid duplicate subjects
+- Added proper date grouping with `GROUP BY DATE(date)`
+
+### Data Processing Improvements
+```python
+# Convert rows to dictionary with date as key
+daily_data = {}
+for row in rows:
+    date_str = row['date'].strftime('%Y-%m-%d') if isinstance(row['date'], (datetime, date)) else row['date']
+    subjects = row['subjects'].split(',') if row['subjects'] else []
+    daily_data[date_str] = {
+        'hours': float(row['total_hours']) if row['total_hours'] else 0,
+        'subjects': subjects
+    }
+```
+- Added proper date string conversion
+- Added type checking for date objects
+- Ensured consistent date format throughout
+- Added proper handling of NULL values
+
+## 3. Frontend Calendar Display (studying/templates/studying/index.html, sleeping/templates/sleeping/index.html, sports/templates/sports/index.html)
+### CSS Improvements
+```css
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(53, 15px);
+    grid-template-rows: repeat(7, 15px);
+    gap: 0.25rem;
+    min-width: 800px;
+    position: relative;
+}
+
+.calendar-cell {
+    width: 15px;
+    height: 15px;
+    border-radius: 0.25rem;
+    background-color: var(--gray-light);
+    transition: transform 0.2s ease;
+    position: relative;
+}
+
+.calendar-cell[data-intensity="1"] { background-color: rgba(74, 105, 189, 0.8); }
+.calendar-cell[data-intensity="2"] { background-color: rgba(30, 55, 153, 0.8); }
+.calendar-cell[data-intensity="3"] { background-color: rgba(12, 36, 97, 0.8); }
+.calendar-cell[data-intensity="4"] { background-color: rgba(44, 62, 80, 0.8); }
+```
+- Added proper grid layout
+- Added intensity-based coloring
+- Added proper positioning and overflow handling
+
+### JavaScript Improvements
+```javascript
+async function fetchCalendarData() {
+    try {
+        const response = await fetch('/studying/api/calendar-data');
+        if (!response.ok) {
+            throw new Error('Failed to fetch calendar data');
+        }
+        const data = await response.json();
+        
+        if (!Array.isArray(data)) {
+            console.error('Invalid calendar data format:', data);
+            return;
+        }
+        
+        calendarData = data;
+        console.log('Received calendar data:', calendarData.length, 'entries');
+        
+        if (calendarData.length === 0) {
+            console.warn('No calendar data available');
+            // Show message to user
+            const message = document.createElement('div');
+            message.className = 'alert alert-info mt-3';
+            message.textContent = 'No study data available for 2025. Start adding study sessions to see your progress!';
+            document.querySelector('.calendar-container').insertBefore(message, document.querySelector('.calendar-header'));
+            return;
+        }
+        
+        updateCalendar();
+    } catch (error) {
+        console.error('Error fetching calendar data:', error);
+        // Show error to user
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'alert alert-danger mt-3';
+        errorMessage.textContent = 'Error: Failed to load calendar data. Please try again later.';
+        document.querySelector('.calendar-container').insertBefore(errorMessage, document.querySelector('.calendar-header'));
+    }
+}
+```
+- Added proper error handling
+- Added data validation
+- Added user-friendly error messages
+- Added console logging for debugging
+
+## 4. Route Handler Changes (studying/routes.py, sleeping/routes.py, sports/routes.py)
+```python
+@studying_bp.route('/api/calendar-data')
+def get_calendar():
+    try:
+        calendar_data = get_calendar_data()
+        if not calendar_data:
+            return jsonify([])
+        return jsonify(calendar_data)
+    except Exception as e:
+        current_app.logger.error(f"Error in get_calendar route: {str(e)}")
+        return jsonify([])
+```
+- Added proper error handling
+- Added logging
+- Ensured consistent JSON response format
+
+## 5. Debugging and Logging
+- Added detailed logging throughout the process
+- Added console logging in frontend
+- Added error tracking and reporting
+- Added data validation checks
+
+## 6. Data Structure
+The calendar data structure for each day:
+```javascript
+{
+    'date': 'YYYY-MM-DD',
+    'day': day_number,
+    'month': month_number,
+    'year': year,
+    'weekday': weekday_number,  // 0 = Monday, 6 = Sunday
+    'week': week_number,
+    'gridColumn': week_number,
+    'hours': study_hours,
+    'intensity': intensity_level,  // 0-4 based on hours
+    'subjects': [list_of_subjects],
+    'isToday': boolean,
+    'isWeekend': boolean,
+    'isFuture': boolean
+}
+```
+
+## 7. Key Fixes
+1. Fixed date handling and formatting
+2. Fixed data mapping from database to calendar
+3. Fixed grid positioning and layout
+4. Fixed error handling and user feedback
+5. Fixed data validation and type checking
+6. Fixed MySQL query optimization
+7. Fixed frontend display issues
+
+## 8. Additional Changes for Sleeping and Sports
+### Sleeping Module Changes
+1. Updated database schema:
+```sql
+CREATE TABLE IF NOT EXISTS sleeping_entries (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    date DATE,
+    hours FLOAT,
+    quality VARCHAR(50),
+    notes TEXT
+)
+```
+
+2. Added intensity calculation based on sleep hours:
+```python
+if hours < 6:
+    intensity = 1  # Poor sleep
+elif hours < 7:
+    intensity = 2  # Below average
+elif hours < 8:
+    intensity = 3  # Good sleep
+else:
+    intensity = 4  # Excellent sleep
+```
+
+### Sports Module Changes
+1. Updated database schema:
+```sql
+CREATE TABLE IF NOT EXISTS sports_entries (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    date DATE,
+    duration FLOAT,
+    activity VARCHAR(100),
+    intensity VARCHAR(50),
+    notes TEXT
+)
+```
+
+2. Added intensity calculation based on duration and activity type:
+```python
+if duration < 30:
+    intensity = 1  # Light activity
+elif duration < 60:
+    intensity = 2  # Moderate activity
+elif duration < 90:
+    intensity = 3  # Intense activity
+else:
+    intensity = 4  # Very intense activity
+```
+
+These changes ensure proper data flow from the MySQL database through the backend to the frontend calendar display, with proper error handling and user feedback throughout the process. The same calendar visualization system is now consistently applied across studying, sleeping, and sports tracking modules.
